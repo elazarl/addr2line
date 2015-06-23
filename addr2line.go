@@ -11,9 +11,10 @@ import (
 )
 
 type Addr2line struct {
-	cmd *exec.Cmd
-	r   io.ReadCloser
-	w   io.WriteCloser
+	FilePrefix []byte
+	cmd        *exec.Cmd
+	r          io.ReadCloser
+	w          io.WriteCloser
 }
 
 func NewFromCmd(cmd *exec.Cmd) (*Addr2line, error) {
@@ -49,7 +50,7 @@ func NewFromCmd(cmd *exec.Cmd) (*Addr2line, error) {
 	if err := stderr.Close(); err != nil {
 		panic("stderr pipe cannot just refuse to close: " + err.Error())
 	}
-	return &Addr2line{cmd, r, w}, nil
+	return &Addr2line{nil, cmd, r, w}, nil
 }
 
 func New(elf string) (*Addr2line, error) {
@@ -92,6 +93,9 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 		line, err := strconv.Atoi(string(l))
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert line number to string: %s", string(lines[i+1]))
+		}
+		if bytes.HasPrefix(file, a.FilePrefix) {
+			file = file[len(a.FilePrefix):]
 		}
 		results = append(results, Result{string(lines[i]), string(file), line})
 	}

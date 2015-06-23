@@ -30,3 +30,10 @@ In Go (golang)?
             fmt.Println("Inlined by", r.Function, "@", r.File, r.Line)
         }
     }
+
+If you know that the source file's root directory was `/home/elazar/project`,
+let `addr2line` know about it, it'll strip the prefix from the files.
+
+    a, _ := addr2line.New("a.out")
+    a.FilePrefix = []byte("/home/foo")
+
