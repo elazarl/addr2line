@@ -77,6 +77,9 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 		return nil, fmt.Errorf("malformed output, not ending with newline: %q", string(buf[:n]))
 	}
 	buf = buf[:n-1] // remove last newline
+	if bytes.Equal(buf, []byte("??\n??:0")) {
+		return nil, nil
+	}
 	lines := bytes.Split(buf, []byte{'\n'})
 	results := []Result{}
 	for i := 0; i < len(lines); i += 2 {
