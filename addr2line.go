@@ -41,7 +41,7 @@ func NewFromCmd(cmd *exec.Cmd) (*Addr2line, error) {
 	}()
 
 	select {
-	case <-time.After(2 * time.Millisecond):
+	case <-time.After(20 * time.Millisecond):
 	case err := <-ch:
 		return nil, err
 	}
