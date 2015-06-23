@@ -1,2 +1,32 @@
-# addr2line
-go library runs addr2line in background and query it
+# Go addr2line
+
+Do you have memory addresses from an ELF file (say, kernel core dump)?
+
+Do you want to find out where are they located in source programatically?
+
+Including inline function information?
+
+In Go (golang)?
+
+    package main
+
+    import (
+        "fmt"
+        "log"
+    	"github.com/elazarl/addr2line"
+    )
+
+    func main() {
+    	a, err := addr2line.New("a.out")
+        if err != nil {
+            log.Fatalln("New", err)
+        }
+	rs, err := a.Resolve(0xff)
+        if err != nil {
+            log.Fatalln("Resolve", err)
+        }
+        fmt.Println(rs[0].Function, "@", rs[0].File, rs[0].Line)
+        for _, r := range rs[1:] {
+            fmt.Println("Inlined by", r.Function, "@", r.File, r.Line)
+        }
+    }
