@@ -2,6 +2,8 @@ package addr2line
 
 import (
 	"bytes"
+	"debug/dwarf"
+	"debug/elf"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -54,7 +56,17 @@ func NewFromCmd(cmd *exec.Cmd) (*Addr2line, error) {
 }
 
 func New(elf string) (*Addr2line, error) {
-	return NewFromCmd(exec.Command("addr2line", "-fie", elf))
+	dirs, err := compDirFromELF(elf)
+	if err != nil {
+		return nil, err
+	}
+	a2l, err := NewFromCmd(exec.Command("addr2line", "-fie", elf))
+	prefix := lcp(dirs)
+	if prefix != "" {
+		prefix += "/"
+	}
+	a2l.FilePrefix = []byte(prefix)
+	return a2l, err
 }
 
 type Result struct {
@@ -104,4 +116,70 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 
 func (a *Addr2line) Resolve(addr uint64) ([]Result, error) {
 	return a.ResolveString(fmt.Sprintf("%x", addr))
+}
+
+func compDirFromELF(path string) ([]string, error) {
+	f, err := elf.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	d, err := f.DWARF()
+	if err != nil {
+		return nil, err
+	}
+	rv := []string{}
+	r := d.Reader()
+	for {
+		e, err := r.Next()
+		if err != nil {
+			return nil, err
+		}
+		if e == nil {
+			break
+		}
+		r.SkipChildren()
+		if e.Tag != dwarf.TagCompileUnit {
+			continue
+		}
+		for _, field := range e.Field {
+			if field.Attr == dwarf.AttrCompDir {
+				rv = append(rv, field.Val.(string))
+			}
+		}
+	}
+	return rv, nil
+}
+
+// from Rosetta Stone:
+// lcp finds the longest common prefix of the input strings.
+// It compares by bytes instead of runes (Unicode code points).
+// It's up to the caller to do Unicode normalization if desired
+// (e.g. see golang.org/x/text/unicode/norm).
+func lcp(l []string) string {
+	// Special cases first
+	switch len(l) {
+	case 0:
+		return ""
+	case 1:
+		return l[0]
+	}
+	// LCP of min and max (lexigraphically)
+	// is the LCP of the whole set.
+	min, max := l[0], l[0]
+	for _, s := range l[1:] {
+		switch {
+		case s < min:
+			min = s
+		case s > max:
+			max = s
+		}
+	}
+	for i := 0; i < len(min) && i < len(max); i++ {
+		if min[i] != max[i] {
+			return min[:i]
+		}
+	}
+	// In the case where lengths are not equal but all bytes
+	// are equal, min is the answer ("foo" < "foobar").
+	return min
 }
