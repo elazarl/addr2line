@@ -6,6 +6,10 @@ Do you want to find out where are they located in source programatically?
 
 Including inline function information?
 
+This library would give you this information, by running `addr2line` once,
+and feeding it with the address to the standard input. Hence minimizing the
+overhead for each address resolution.
+
 In Go (golang)?
 
     package main
