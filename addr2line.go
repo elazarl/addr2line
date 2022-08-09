@@ -79,7 +79,7 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 	if _, err := fmt.Fprintf(a.w, "%s\n", addr); err != nil {
 		return nil, err
 	}
-	const _POSIX_PIPE_BUF = 512
+	const _POSIX_PIPE_BUF = 1024
 	buf := make([]byte, _POSIX_PIPE_BUF)
 	// binutil addr2line fflush after writing to pipe. Hopefully would be able to read it atomically
 	n, err := a.r.Read(buf)
