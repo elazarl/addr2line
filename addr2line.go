@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
+	"regexp"
 )
 
 type Addr2line struct {
@@ -79,7 +80,7 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 	if _, err := fmt.Fprintf(a.w, "%s\n", addr); err != nil {
 		return nil, err
 	}
-	const _POSIX_PIPE_BUF = 1024
+	const _POSIX_PIPE_BUF = 2048
 	buf := make([]byte, _POSIX_PIPE_BUF)
 	// binutil addr2line fflush after writing to pipe. Hopefully would be able to read it atomically
 	n, err := a.r.Read(buf)
@@ -94,6 +95,7 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 		return nil, nil
 	}
 	lines := bytes.Split(buf, []byte{'\n'})
+	m1 := regexp.MustCompile(`^([0-9]{1,5}).*$`)
 	results := []Result{}
 	for i := 0; i < len(lines); i += 2 {
 		j := bytes.LastIndex(lines[i+1], []byte{':'})
@@ -102,7 +104,7 @@ func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
 		}
 		file := lines[i+1][:j]
 		l := lines[i+1][j+1:]
-		line, err := strconv.Atoi(string(l))
+		line, err := strconv.Atoi(m1.ReplaceAllString(string(l), "$1"))
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert line number to string: %s", string(lines[i+1]))
 		}
