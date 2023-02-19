@@ -8,9 +8,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"time"
-	"regexp"
 )
 
 type Addr2line struct {
@@ -74,6 +74,13 @@ type Result struct {
 	Function string
 	File     string
 	Line     int
+}
+
+func (a *Addr2line) Close() error {
+        if err := a.cmd.Process.Kill(); err != nil {
+                return err
+        }
+        return nil
 }
 
 func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
