@@ -77,10 +77,10 @@ type Result struct {
 }
 
 func (a *Addr2line) Close() error {
-        if err := a.cmd.Process.Kill(); err != nil {
-                return err
-        }
-        return nil
+	if err := a.cmd.Process.Kill(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Addr2line) ResolveString(addr string) ([]Result, error) {
